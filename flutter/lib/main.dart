@@ -1,23 +1,24 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'package:mopro_flutter_bindings/src/rust/third_party/mopro_wallet_connect_noir.dart';
-import 'package:mopro_flutter_bindings/src/rust/frb_generated.dart';
+import 'package:mopro_flutter_bindings/mopro_flutter_bindings.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:convert/convert.dart';
 import 'package:http/http.dart' as http;
 
 import 'wallet_connect_service.dart';
+import 'bridge_page.dart';
+import 'bridge_demo_page.dart';
+import 'testnet_demo_page.dart';
 
 // Global navigator key for the app
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
-  await RustLib.init();
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -27,14 +28,180 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Mopro Wallet Connect Noir',
+      title: 'Insidr - Private Bridge',
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.deepPurple,
         useMaterial3: true,
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF0f0f1a),
       ),
-      home: const HomePage(),
+      // Start with the demo page for easy testing
+      home: const AppLauncherPage(),
+    );
+  }
+}
+
+/// App launcher page - choose between demo and full version
+class AppLauncherPage extends StatelessWidget {
+  const AppLauncherPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0f0f1a),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Logo
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.deepPurple.shade700,
+                      Colors.deepPurple.shade900
+                    ],
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.lock, size: 64, color: Colors.white),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'INSIDR',
+                style: TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 4,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Private Cross-Chain Bridge',
+                style: TextStyle(color: Colors.grey[400], fontSize: 16),
+              ),
+              const SizedBox(height: 48),
+
+              // Demo Mode Button (Full working demo)
+              _buildLaunchButton(
+                context,
+                title: '🚀 Demo Mode',
+                subtitle:
+                    'Full working bridge simulation\n(No real transactions)',
+                color: Colors.green,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const BridgeDemoPage()),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Testnet Demo Button
+              _buildLaunchButton(
+                context,
+                title: '🌐 Testnet Demo',
+                subtitle:
+                    'Real deployed contracts\n(Stellar + Polkadot testnet)',
+                color: Colors.orange,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TestnetDemoPage()),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Bridge Page Button
+              _buildLaunchButton(
+                context,
+                title: '🌉 Bridge (WIP)',
+                subtitle: 'Real ZK proof generation\n(Requires circuit assets)',
+                color: Colors.deepPurple,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const BridgePage()),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Original Home Page
+              _buildLaunchButton(
+                context,
+                title: '🧪 Noir Prover',
+                subtitle: 'Test Noir proof generation\n& on-chain verification',
+                color: Colors.blue,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const HomePage()),
+                ),
+              ),
+
+              const Spacer(),
+              Text(
+                'Stellar ↔ Polkadot • Mobile ZK Proofs',
+                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLaunchButton(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      child: Material(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: color.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(color: Colors.grey[400], fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.arrow_forward_ios, color: color),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -68,7 +235,8 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _controllerNoirB = TextEditingController();
 
   // Smart contract details
-  static const String contractAddress = "0x3C9f0361F4120D236F752035D22D1e850EA0f5E6";
+  static const String contractAddress =
+      "0x3C9f0361F4120D236F752035D22D1e850EA0f5E6";
   static const String contractABI = '''[
     {
       "inputs": [],
@@ -170,42 +338,46 @@ class _HomePageState extends State<HomePage> {
         });
 
         final errorMessage = e.toString();
-        final isConfigError = errorMessage.contains('Project ID not configured');
+        final isConfigError = errorMessage.contains(
+          'Project ID not configured',
+        );
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               isConfigError
                   ? 'Configuration Error: Missing PROJECT_ID'
-                  : 'Failed to initialize wallet connect: $errorMessage'
+                  : 'Failed to initialize wallet connect: $errorMessage',
             ),
             backgroundColor: Colors.red,
             duration: Duration(seconds: isConfigError ? 8 : 5),
-            action: isConfigError ? SnackBarAction(
-              label: 'Help',
-              textColor: Colors.white,
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Configuration Required'),
-                    content: const Text(
-                      'To use wallet connectivity, you need to:\n\n'
-                      '1. Get a Project ID from cloud.reown.com\n'
-                      '2. Run the app with:\n'
-                      '   flutter run --dart-define=PROJECT_ID=your_project_id\n\n'
-                      'See WALLET_CONNECT_SETUP.md for detailed instructions.'
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('OK'),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ) : null,
+            action: isConfigError
+                ? SnackBarAction(
+                    label: 'Help',
+                    textColor: Colors.white,
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Configuration Required'),
+                          content: const Text(
+                            'To use wallet connectivity, you need to:\n\n'
+                            '1. Get a Project ID from cloud.reown.com\n'
+                            '2. Run the app with:\n'
+                            '   flutter run --dart-define=PROJECT_ID=your_project_id\n\n'
+                            'See WALLET_CONNECT_SETUP.md for detailed instructions.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  )
+                : null,
           ),
         );
       }
@@ -227,7 +399,9 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _verificationKey = byteData.buffer.asUint8List();
       });
-      print('Verification key loaded successfully (${_verificationKey!.length} bytes)');
+      print(
+        'Verification key loaded successfully (${_verificationKey!.length} bytes)',
+      );
     } catch (e) {
       print('Failed to load verification key: $e');
       if (mounted) {
@@ -308,8 +482,11 @@ class _HomePageState extends State<HomePage> {
     Uint8List? noirProofResult;
     final stopwatch = Stopwatch()..start();
     try {
-      var inputs = [_controllerNoirA.text, _controllerNoirB.text];
-      _proofInputs = inputs;
+      var inputList = [_controllerNoirA.text, _controllerNoirB.text];
+      _proofInputs = inputList;
+
+      // Convert to Map format expected by generateNoirProof
+      var inputs = {"a": _controllerNoirA.text, "b": _controllerNoirB.text};
 
       // Constants for Noir proof generation
       const bool onChain = true;
@@ -320,8 +497,12 @@ class _HomePageState extends State<HomePage> {
       }
 
       // Copy assets to file system for native code access
-      final circuitPath = await copyAssetToFileSystem('assets/noir_multiplier2.json');
-      final srsPath = await copyAssetToFileSystem('assets/noir_multiplier2.srs');
+      final circuitPath = await copyAssetToFileSystem(
+        'assets/noir_multiplier2.json',
+      );
+      final srsPath = await copyAssetToFileSystem(
+        'assets/noir_multiplier2.srs',
+      );
 
       noirProofResult = await generateNoirProof(
         circuitPath: circuitPath,
@@ -334,7 +515,7 @@ class _HomePageState extends State<HomePage> {
       stopwatch.stop();
       _proofGenerationTime = stopwatch.elapsed;
       // Store the inputs for later use in verification
-      _proofInputs = inputs;
+      _proofInputs = inputList;
     } on Exception catch (e) {
       print("Error: $e");
       stopwatch.stop();
@@ -375,7 +556,9 @@ class _HomePageState extends State<HomePage> {
       var vk = _verificationKey;
 
       if (vk == null) {
-        throw Exception("Verification key not available. Generate proof first.");
+        throw Exception(
+          "Verification key not available. Generate proof first.",
+        );
       }
 
       if (proofResult == null) {
@@ -387,7 +570,9 @@ class _HomePageState extends State<HomePage> {
       const bool lowMemoryMode = false;
 
       // Copy circuit asset to file system for native code access
-      final circuitPath = await copyAssetToFileSystem('assets/noir_multiplier2.json');
+      final circuitPath = await copyAssetToFileSystem(
+        'assets/noir_multiplier2.json',
+      );
 
       valid = await verifyNoirProof(
         circuitPath: circuitPath,
@@ -445,22 +630,31 @@ class _HomePageState extends State<HomePage> {
       final originalProof = _noirProofResult!;
 
       // Copy circuit asset to file system for native code access
-      final circuitPath = await copyAssetToFileSystem('assets/noir_multiplier2.json');
+      final circuitPath = await copyAssetToFileSystem(
+        'assets/noir_multiplier2.json',
+      );
 
       // Get the number of public inputs for this circuit
-      final numPublicInputs = await getNumPublicInputsFromCircuit(circuitPath: circuitPath);
+      final numPublicInputs = await getNumPublicInputsFromCircuit(
+        circuitPath: circuitPath,
+      );
       print('Number of public inputs: $numPublicInputs');
 
       // Parse the proof into proof bytes and public inputs using Rust functions
-      final parsedResult = await parseProofWithPublicInputs(proof: originalProof, numPublicInputs: numPublicInputs);
+      final parsedResult = await parseProofWithPublicInputs(
+        proof: originalProof,
+        numPublicInputs: numPublicInputs,
+      );
       final proof = parsedResult.proof;
       final publicInputs = parsedResult.publicInputs;
 
       print('Proof: ${hex.encode(proof)}');
-      print('Public inputs: ${publicInputs.map((input) => hex.encode(input)).join(', ')}');
+      print(
+        'Public inputs: ${publicInputs.map((input) => hex.encode(input)).join(', ')}',
+      );
 
       // Create Web3 client
-      final rpcUrl = 'https://ethereum-sepolia.publicnode.com';
+      const rpcUrl = 'https://ethereum-sepolia.publicnode.com';
       final httpClient = Web3Client(rpcUrl, http.Client());
 
       // Create contract instance
@@ -518,10 +712,7 @@ class _HomePageState extends State<HomePage> {
           children: [
             const Text(
               'Wallet Connection',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             if (_isInitializing)
@@ -586,10 +777,7 @@ class _HomePageState extends State<HomePage> {
           children: [
             const Text(
               'Noir Zero-Knowledge Proof',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             if (isProving || isVerifyingOnChain)
@@ -649,8 +837,8 @@ class _HomePageState extends State<HomePage> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: (_controllerNoirA.text.isEmpty ||
-                          _controllerNoirB.text.isEmpty ||
-                          isProving)
+                              _controllerNoirB.text.isEmpty ||
+                              isProving)
                           ? null
                           : _generateNoirProof,
                       child: const Text("Generate Proof"),
@@ -710,7 +898,9 @@ class _HomePageState extends State<HomePage> {
                     ),
                     const SizedBox(height: 8),
                     if (_proofInputs != null)
-                      Text('Inputs: a=${_proofInputs![0]}, b=${_proofInputs![1]}'),
+                      Text(
+                        'Inputs: a=${_proofInputs![0]}, b=${_proofInputs![1]}',
+                      ),
                     Text('Proof size: ${_noirProofResult!.length} bytes'),
                     if (_proofGenerationTime != null)
                       Text('Time: ${_formatDuration(_proofGenerationTime)}'),
@@ -733,7 +923,9 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                       if (_localVerificationTime != null)
-                        Text('Time: ${_formatDuration(_localVerificationTime)}'),
+                        Text(
+                          'Time: ${_formatDuration(_localVerificationTime)}',
+                        ),
                     ],
                     if (_onChainValid != null) ...[
                       const SizedBox(height: 8),
@@ -754,7 +946,9 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                       if (_onChainVerificationTime != null)
-                        Text('Time: ${_formatDuration(_onChainVerificationTime)}'),
+                        Text(
+                          'Time: ${_formatDuration(_onChainVerificationTime)}',
+                        ),
                     ],
                   ],
                 ),
@@ -773,6 +967,17 @@ class _HomePageState extends State<HomePage> {
         title: const Text('Mopro Wallet Connect Noir'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
+          // Bridge button
+          IconButton(
+            icon: const Icon(Icons.swap_horiz),
+            tooltip: 'PrivatePay Bridge',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const BridgePage()),
+              );
+            },
+          ),
           if (_walletConnected)
             Container(
               margin: const EdgeInsets.only(right: 16),
@@ -781,12 +986,7 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildWalletSection(),
-            _buildProofSection(),
-          ],
-        ),
+        child: Column(children: [_buildWalletSection(), _buildProofSection()]),
       ),
     );
   }

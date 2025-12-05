@@ -9,20 +9,20 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'package:mopro_flutter_bindings/src/rust/third_party/mopro_wallet_connect_noir.dart';
-import 'package:mopro_flutter_bindings/src/rust/frb_generated.dart';
+import 'package:mopro_flutter_bindings/mopro_flutter_bindings.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() async => await RustLib.init());
+  setUpAll(() async {
+    // Initialize bindings if needed
+  });
 
   testWidgets('Noir Proof Generation Test', (WidgetTester tester) async {
-    var inputs = ["5", "3"];
+    var inputs = {"a": "5", "b": "3"};
     // Constants for Noir proof generation
     const bool onChain = true; // Use Keccak for Solidity compatibility
     const bool lowMemoryMode = false;
@@ -45,7 +45,7 @@ void main() {
   });
 
   testWidgets('Noir Proof Verification Test', (WidgetTester tester) async {
-    var inputs = ["5", "3"];
+    var inputs = {"a": "5", "b": "3"};
     // Constants for Noir proof generation
     const bool onChain = true; // Use Keccak for Solidity compatibility
     const bool lowMemoryMode = false;
@@ -76,17 +76,11 @@ void main() {
 
   testWidgets('Noir Verification Key Generation Test',
       (WidgetTester tester) async {
-    const bool onChain = true;
-    const bool lowMemoryMode = false;
     final circuitPath =
         await copyAssetToFileSystem('assets/noir_multiplier2.json');
-    final srsPath = await copyAssetToFileSystem('assets/noir_multiplier2.srs');
 
     final Uint8List vk = await getNoirVerificationKey(
-      circuitPath: circuitPath,
-      srsPath: srsPath,
-      onChain: onChain,
-      lowMemoryMode: lowMemoryMode,
+      'assets/noir_multiplier2.vk',
     );
 
     expect(vk, isNotNull);
