@@ -1,6 +1,6 @@
 target/
 build/
-
+node_modules/
 # Ignore mopro flutter bindings
 # Generate your own bindings with `mopro build`
 mopro_flutter_bindings/
