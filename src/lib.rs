@@ -12,7 +12,8 @@ pub fn mopro_hello_world() -> String {
 }
 
 /// Struct to hold split proof data
-#[cfg_attr(feature = "uniffi", uniffi::Record, Debug, Clone)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct ProofWithPublicInputs {
     /// The proof without public inputs
     pub proof: Vec<u8>,

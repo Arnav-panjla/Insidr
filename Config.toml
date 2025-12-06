@@ -1,6 +1,4 @@
-build_mode = "release"
+build_mode = "debug"
 target_adapters = ["noir"]
-target_platforms = ["flutter"]
-auto_update = false
-
-[update]
+target_platforms = ["android"]
+android = ["aarch64-linux-android"]
